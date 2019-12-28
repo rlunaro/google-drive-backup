@@ -1,0 +1,41 @@
+{
+
+"//1" : "email data",
+
+"emailFrom" : "YOUR GOOGLE EMAIL ACCOUNT HERE", 
+"emailTo" : ["A LIST OF EMAILS TO NOTIFY, CAN BE LEFT EMPTY"], 
+"emailSuccess" : "email_success_template.txt",
+"emailFailure" : "email_failure_template.txt",
+
+"//2" : "config of directories / files to backup", 
+
+"resourcesToBackup" : [
+						"THE LIST OF DIRECTORIES OR FILES TO BACKUP"
+						],
+
+"verifyUploadedFiles" : "true",
+
+"//3" : "folder for each policy", 
+
+"dailyPolicyFolder" : "01_daily", 
+"monthlyPolicyFolder" : "02_monthly", 
+"yearlyPolicyFolder" : "03_yearly", 
+
+"//5" : "config info from credentials.json file", 
+"//6" : "this part is the authorization to use the API from google", 
+"//7" : "More information visti:", 
+"//9" : "https://github.com/rlunaro/google-drive-backup/blob/master/docs/request_permission_from_google.md",
+
+"installed":
+	{"client_id":"SOME-CLIENT-ID",
+	"project_id":"SOME-PROJECT-ID",
+	"auth_uri":"https://accounts.google.com/o/oauth2/auth",
+	"token_uri":"https://oauth2.googleapis.com/token",
+	"auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+	"client_secret":"SOME-CLIENT-SECRET",
+	"redirect_uris":
+		["urn:ietf:wg:oauth:2.0:oob",
+		"http://localhost"]
+	}
+}
+
