@@ -12,7 +12,7 @@ import zipfile
 import datetime
 
 lib_dir='/home/rluna/python/google-drive-backup-env/lib/python3.6/site-packages'
-deployment_filename = 'deploy.zip'
+deployment_filename = 'google-drive-backup.zip'
 
 def add_file_dir( zipfile:object, file_path:str, archive_name:str ) -> None :
     #print(f"Adding file {file_path}")
@@ -36,6 +36,15 @@ def add_file_dir( zipfile:object, file_path:str, archive_name:str ) -> None :
 if __name__ == '__main__' : 
     print('deploy.py - create a deploy file')
     
+    # read VERSION file contents
+    try: 
+        with open('VERSION', 'rt', encoding='utf-8' ) as version_file : 
+            versionAsTxt = version_file.read().strip()
+        deployment_filename = deployment_filename.replace('.zip', f'_{versionAsTxt}.zip')
+    except: 
+        # do nothing, this error can be safely ignored
+        pass
+
     with zipfile.ZipFile(deployment_filename, 'w', zipfile.ZIP_DEFLATED) as deployment : 
 
         add_file_dir( deployment, 'src/backup_policy.py', 'backup_policy.py' )
