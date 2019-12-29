@@ -41,7 +41,9 @@ SCOPES = ['https://www.googleapis.com/auth/drive.metadata',
           'https://www.googleapis.com/auth/gmail.send']
 #          'https://www.googleapis.com/auth/gmail.compose',
 
-def loadOrValidateCredentials( credentials_file, scopes_list : list ):
+def loadOrValidateCredentials( token_file: str, 
+                               credentials_file: str, 
+                               scopes_list : list ):
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -62,34 +64,37 @@ def loadOrValidateCredentials( credentials_file, scopes_list : list ):
             pickle.dump(creds, token)
     return creds
 
-def deleteAndCreateFolder( dirName, parentFolderId = None ):
+def deleteAndCreateFolder( googleDrive, dirName, parentFolderId = None ):
     googleDrive.folderDelete( dirName, parentFolderId )
     folderId =  googleDrive.folderCreate( dirName, parentFolderId )
     return folderId 
 
-def doDailyPolicy( config: dict, googleDrive, backupPolicy ):
+def doDailyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
     dailyPolicyFolder = config["dailyPolicyFolder"]
     dailyPolicyFolderId = googleDrive.getOrCreateFolder( dailyPolicyFolder, 
                                                          backupFolderId )
-    currentDestinationOfCopiesId = deleteAndCreateFolder( backupPolicy.getDailyDir(), 
+    currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive, 
+                                                          backupPolicy.getDailyDir(), 
                                                           dailyPolicyFolderId )
     doBackup( config, googleDrive, currentDestinationOfCopiesId )
 
         
-def doMonthlyPolicy( config: dict, googleDrive, backupPolicy ):
+def doMonthlyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
     monthlyPolicyFolder = config["monthlyPolicyFolder"]
     monthlyPolicyFolderId = googleDrive.getOrCreateFolder( monthlyPolicyFolder, 
                                                          backupFolderId )
-    currentDestinationOfCopiesId = deleteAndCreateFolder( backupPolicy.getMonthlyDir(), 
+    currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive,
+                                                          backupPolicy.getMonthlyDir(), 
                                                           monthlyPolicyFolderId )
     doBackup( config, googleDrive, currentDestinationOfCopiesId )
 
 
-def doYearlyPolicy( config: dict, googleDrive, backupPolicy ):
+def doYearlyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
     yearlyPolicyFolder = config["yearlyPolicyFolder"]
     yearlyPolicyFolderId = googleDrive.getOrCreateFolder( yearlyPolicyFolder, 
                                                          backupFolderId )
-    currentDestinationOfCopiesId = deleteAndCreateFolder( backupPolicy.getYearlyDir(), 
+    currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive,
+                                                          backupPolicy.getYearlyDir(), 
                                                           yearlyPolicyFolderId )
     doBackup( config, googleDrive, currentDestinationOfCopiesId )
 
@@ -128,7 +133,7 @@ def loadConfigContents( config_file : str ):
         config = json.load( config_file )       
     return config
 
-def sendSuccessEmail( googleDrive, backupPolicy ):
+def sendSuccessEmail( googleDrive, backupPolicy, creds, today_value, config ):
     service_gmail = ServiceGmail( credentials=creds )
     placeholders = { "day" : today_value.strftime("%d/%m"), 
                      "hour" : datetime.datetime.now().strftime("%H:%M"),
@@ -141,7 +146,7 @@ def sendSuccessEmail( googleDrive, backupPolicy ):
                                    emailSubject=successTemplate.getSubject(),
                                    emailBody=successTemplate.getBody() )
 
-def sendFailureEmail( excInfo ):
+def sendFailureEmail( creds, excInfo ):
     service_gmail = ServiceGmail( credentials=creds )
     placeholders = { "day" : today_value.strftime("%d/%m"), 
                      "hour" : datetime.datetime.now().strftime("%H:%M"),
@@ -153,50 +158,58 @@ def sendFailureEmail( excInfo ):
                                    emailSubject=successTemplate.getSubject(),
                                    emailBody=successTemplate.getBody() )
 
+
+
 if __name__ == '__main__':
     print("google-drive-backup")
     
-#    try: 
-    (token_file, 
-     config_file,
-     today_value ) = parseArguments( sys.argv[1:] )
+    try:
 
-    config = loadConfigContents( config_file )
+        (token_file, 
+         config_file,
+         today_value ) = parseArguments( sys.argv[1:] )
+    
+        config = loadConfigContents( config_file )
+            
+        creds = loadOrValidateCredentials( token_file, config_file, SCOPES )
+    
+        reporter = OnMemoryReportingStrategy()
+        googleDrive = ServiceGoogleDrive( credentials = creds, 
+                                          verificationStrategy= RealVerifyStrategy(),
+                                          reporter= reporter ) 
+        backupFolderId = googleDrive.getOrCreateFolder("backup") 
         
-    creds = loadOrValidateCredentials( config_file, SCOPES )
+        backupPolicy = BackupPolicy( today = today_value )
+            
+        if backupPolicy.isDailyPolicy() :
+            reporter.info( "--->>> DAILY COPY START <<<------------------")
+            reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
+            doDailyPolicy( config, googleDrive, backupPolicy, backupFolderId )
+            reporter.info( "--->>> DAILY COPY ENDS <<<------------------")
+    
+        if backupPolicy.isMonthlyPolicy() : 
+            reporter.info( "--->>> MONTHLY COPY START <<<------------------")
+            reporter.info( f"backup/{config['monthlyPolicyFolder']}/{backupPolicy.getMonthlyDir()}")
+            doMonthlyPolicy( config, googleDrive, backupPolicy, backupFolderId )
+            reporter.info( "--->>> MONTHLY COPY ENDS <<<------------------")
+            
+        if backupPolicy.isYearlyPolicy() : 
+            reporter.info( "--->>> YEARLY COPY START <<<------------------")
+            reporter.info( f"backup/{config['yearlyPolicyFolder']}/{backupPolicy.getYearlyDir()}")
+            doYearlyPolicy( config, googleDrive, backupPolicy, backupFolderId )
+            reporter.info( "--->>> YEARLY COPY ENDS <<<------------------")
+        
+        sendSuccessEmail( googleDrive, 
+                          backupPolicy, 
+                          creds, 
+                          today_value, 
+                          config )
+          
+        print("Success")
 
-    reporter = OnMemoryReportingStrategy()
-    googleDrive = ServiceGoogleDrive( credentials = creds, 
-                                      verificationStrategy= RealVerifyStrategy(),
-                                      reporter= reporter ) 
-    backupFolderId = googleDrive.getOrCreateFolder("backup") 
-    
-    backupPolicy = BackupPolicy( today = today_value )
         
-    if backupPolicy.isDailyPolicy() :
-        reporter.info( "--->>> DAILY COPY START <<<------------------")
-        reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
-        doDailyPolicy( config, googleDrive, backupPolicy )
-        reporter.info( "--->>> DAILY COPY ENDS <<<------------------")
-
-    if backupPolicy.isMonthlyPolicy() : 
-        reporter.info( "--->>> MONTHLY COPY START <<<------------------")
-        reporter.info( f"backup/{config['monthlyPolicyFolder']}/{backupPolicy.getMonthlyDir()}")
-        doMonthlyPolicy( config, googleDrive, backupPolicy )
-        reporter.info( "--->>> MONTHLY COPY ENDS <<<------------------")
-        
-    if backupPolicy.isYearlyPolicy() : 
-        reporter.info( "--->>> YEARLY COPY START <<<------------------")
-        reporter.info( f"backup/{config['yearlyPolicyFolder']}/{backupPolicy.getYearlyDir()}")
-        doYearlyPolicy( config, googleDrive, backupPolicy )
-        reporter.info( "--->>> YEARLY COPY ENDS <<<------------------")
-    
-    sendSuccessEmail( googleDrive, backupPolicy )
-    
-    print("Success")
-    
-#     except: 
-#         sendFailureEmail( sys.exc_info() ) 
-#         print(f"ERROR in line {excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})")
-#         sys.exit(3)   
+    except: 
+        sendFailureEmail( sys.exc_info() ) 
+        print(f"ERROR in line {excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})")
+        sys.exit(3)   
 
