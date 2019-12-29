@@ -156,47 +156,47 @@ def sendFailureEmail( excInfo ):
 if __name__ == '__main__':
     print("google-drive-backup")
     
-    try: 
-        (token_file, 
-         config_file,
-         today_value ) = parseArguments( sys.argv[1:] )
-    
-        config = loadConfigContents( config_file )
-            
-        creds = loadOrValidateCredentials( config_file, SCOPES )
-    
-        reporter = OnMemoryReportingStrategy()
-        googleDrive = ServiceGoogleDrive( credentials = creds, 
-                                          verificationStrategy= RealVerifyStrategy(),
-                                          reporter= reporter ) 
-        backupFolderId = googleDrive.getOrCreateFolder("backup") 
+#    try: 
+    (token_file, 
+     config_file,
+     today_value ) = parseArguments( sys.argv[1:] )
+
+    config = loadConfigContents( config_file )
         
-        backupPolicy = BackupPolicy( today = today_value )
-            
-        if backupPolicy.isDailyPolicy() :
-            reporter.info( "--->>> DAILY COPY START <<<------------------")
-            reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
-            doDailyPolicy( config, googleDrive, backupPolicy )
-            reporter.info( "--->>> DAILY COPY ENDS <<<------------------")
+    creds = loadOrValidateCredentials( config_file, SCOPES )
+
+    reporter = OnMemoryReportingStrategy()
+    googleDrive = ServiceGoogleDrive( credentials = creds, 
+                                      verificationStrategy= RealVerifyStrategy(),
+                                      reporter= reporter ) 
+    backupFolderId = googleDrive.getOrCreateFolder("backup") 
     
-        if backupPolicy.isMonthlyPolicy() : 
-            reporter.info( "--->>> MONTHLY COPY START <<<------------------")
-            reporter.info( f"backup/{config['monthlyPolicyFolder']}/{backupPolicy.getMonthlyDir()}")
-            doMonthlyPolicy( config, googleDrive, backupPolicy )
-            reporter.info( "--->>> MONTHLY COPY ENDS <<<------------------")
-            
-        if backupPolicy.isYearlyPolicy() : 
-            reporter.info( "--->>> YEARLY COPY START <<<------------------")
-            reporter.info( f"backup/{config['yearlyPolicyFolder']}/{backupPolicy.getYearlyDir()}")
-            doYearlyPolicy( config, googleDrive, backupPolicy )
-            reporter.info( "--->>> YEARLY COPY ENDS <<<------------------")
+    backupPolicy = BackupPolicy( today = today_value )
         
-        sendSuccessEmail( googleDrive, backupPolicy )
+    if backupPolicy.isDailyPolicy() :
+        reporter.info( "--->>> DAILY COPY START <<<------------------")
+        reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
+        doDailyPolicy( config, googleDrive, backupPolicy )
+        reporter.info( "--->>> DAILY COPY ENDS <<<------------------")
+
+    if backupPolicy.isMonthlyPolicy() : 
+        reporter.info( "--->>> MONTHLY COPY START <<<------------------")
+        reporter.info( f"backup/{config['monthlyPolicyFolder']}/{backupPolicy.getMonthlyDir()}")
+        doMonthlyPolicy( config, googleDrive, backupPolicy )
+        reporter.info( "--->>> MONTHLY COPY ENDS <<<------------------")
         
-        print("Success")
+    if backupPolicy.isYearlyPolicy() : 
+        reporter.info( "--->>> YEARLY COPY START <<<------------------")
+        reporter.info( f"backup/{config['yearlyPolicyFolder']}/{backupPolicy.getYearlyDir()}")
+        doYearlyPolicy( config, googleDrive, backupPolicy )
+        reporter.info( "--->>> YEARLY COPY ENDS <<<------------------")
     
-    except: 
-        sendFailureEmail( sys.exc_info() ) 
-        print(f"ERROR in line {excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})")
-        sys.exit(3)   
+    sendSuccessEmail( googleDrive, backupPolicy )
+    
+    print("Success")
+    
+#     except: 
+#         sendFailureEmail( sys.exc_info() ) 
+#         print(f"ERROR in line {excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})")
+#         sys.exit(3)   
 

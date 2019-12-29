@@ -102,12 +102,14 @@ class ServiceGoogleDrive(object):
         else:
             file_metadata = {'name' : remoteFileName,
                              'parents': [remoteDirId] }
-        media = MediaFileUpload(localFilePath)
+        media = MediaFileUpload(localFilePath, resumable=True)
         # fields='id'
         file = self._drive_service.files().create( body=file_metadata, 
                                        media_body=media, 
                                        fields='id,md5Checksum').execute()
         return file
+
+    
 
     def _uploadFileWithVerificationAndReporting(self, resource : str,
                                                 destinationFolderId : str ):
