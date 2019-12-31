@@ -60,7 +60,8 @@ if __name__ == '__main__' :
         add_file_dir( deployment, 'email_failure_template.txt', 'email_failure_template.txt' )
         add_file_dir( deployment, 'email_success_template.txt', 'email_success_template.txt' )
         add_file_dir( deployment, 'example-config.json', 'example-config.json' )
-  
+        add_file_dir( deployment, 'logging.json', 'logging.json' )
+        
         add_file_dir( deployment, 'google-drive-backup.bat', 'google-drive-backup.bat' )
         add_file_dir( deployment, 'google-drive-backup.sh', 'google-drive-backup.sh' )
         

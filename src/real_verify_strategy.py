@@ -20,17 +20,13 @@ limitations under the License.
 import hashlib 
 
 class RealVerifyStrategy(object):
-    '''
-    classdocs
-    '''
+    
 
-    def __init__(self):
-        '''
-        Constructor
-        '''
+    def __init__(self, configAvailable : bool ):
+        self._configAvailable = configAvailable
     
     def isVerificationAvailable(self):
-        return True
+        return self._configAvailable
     
     def verify(self, localResource, remoteMd5 ):
         localMd5Sum = hashlib.md5(open(localResource, 'rb').read()).hexdigest()

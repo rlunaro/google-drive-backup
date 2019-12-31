@@ -17,7 +17,7 @@ To install google-drive-backup, follow this steps:
 1. In the machine you want to run it, a working installation of python must be 
 in place. You can download it from https://www.python.org/
 2. Install the needed google libraries by running: 
-`pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib`
+`pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib  oauth2client file_cache`
 If you want to create a virtual environment using `virtualenv`, feel free to do so
 3. Create a directory (for instance, google-drive-backup) and uncompress the 
 file "google-drive-backup-1.0.0.zip" into it
