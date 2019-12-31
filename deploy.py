@@ -62,7 +62,8 @@ if __name__ == '__main__' :
         add_file_dir( deployment, 'example-config.json', 'example-config.json' )
   
         add_file_dir( deployment, 'google-drive-backup.bat', 'google-drive-backup.bat' )
-    
+        add_file_dir( deployment, 'google-drive-backup.sh', 'google-drive-backup.sh' )
+        
     print(f'Deployed file {deployment_filename} on {datetime.datetime.now()}')   
 
     

@@ -39,7 +39,6 @@ from on_memory_reporting_strategy import OnMemoryReportingStrategy
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata',
           'https://www.googleapis.com/auth/drive.file',
           'https://www.googleapis.com/auth/gmail.send']
-#          'https://www.googleapis.com/auth/gmail.compose',
 
 def loadOrValidateCredentials( token_file: str, 
                                credentials_file: str, 
@@ -146,18 +145,34 @@ def sendSuccessEmail( googleDrive, backupPolicy, creds, today_value, config ):
                                    emailSubject=successTemplate.getSubject(),
                                    emailBody=successTemplate.getBody() )
 
-def sendFailureEmail( creds, excInfo ):
-    service_gmail = ServiceGmail( credentials=creds )
-    placeholders = { "day" : today_value.strftime("%d/%m"), 
-                     "hour" : datetime.datetime.now().strftime("%H:%M"),
-                     "error_description" : f"{excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})" }
-    successTemplate = EmailTemplate( config["emailFailure"],
-                                     placeholders )
-    service_gmail.sendSimpleEmail( emailFrom=config["emailFrom"],
-                                   emailTo=config["emailTo"],
-                                   emailSubject=successTemplate.getSubject(),
-                                   emailBody=successTemplate.getBody() )
+def recoverErrorInfo( excInfo ):
+    try:
+        errorLineNumber = excInfo[2].tb_lineno
+        errorDesc1 = excInfo[1]
+        errorDesc0 = excInfo[0]
+    except: 
+        errorLineNumber = 0 
+        errorDesc1 = 'Not available'
+        errorDesc0 = 'Not available'
+    return (errorLineNumber, errorDesc1, errorDesc0)
 
+def sendFailureEmail( creds,  errorLine, errorDesc1, errorDesc0 ):
+    try:
+            
+        service_gmail = ServiceGmail( credentials=creds )
+        placeholders = { "day" : today_value.strftime("%d/%m"), 
+                         "hour" : datetime.datetime.now().strftime("%H:%M"),
+                         "error_description" : f"{errorLine}:{errorDesc1} ({errorDesc0})" }
+        failureTemplate = EmailTemplate( config["emailFailure"],
+                                         placeholders )
+        service_gmail.sendSimpleEmail( emailFrom=config["emailFrom"],
+                                       emailTo=config["emailTo"],
+                                       emailSubject=failureTemplate.getSubject(),
+                                       emailBody=failureTemplate.getBody() )
+    except: 
+        print( f"     To: {config['emailTo']}" )
+        print( f"Subject: {failureTemplate.getSubject()}" )
+        print( f"{failureTemplate.getBody()}" )
 
 
 if __name__ == '__main__':
@@ -180,7 +195,7 @@ if __name__ == '__main__':
         backupFolderId = googleDrive.getOrCreateFolder("backup") 
         
         backupPolicy = BackupPolicy( today = today_value )
-            
+        
         if backupPolicy.isDailyPolicy() :
             reporter.info( "--->>> DAILY COPY START <<<------------------")
             reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
@@ -209,7 +224,8 @@ if __name__ == '__main__':
 
         
     except: 
-        sendFailureEmail( sys.exc_info() ) 
-        print(f"ERROR in line {excInfo[2].tb_lineno}:{excInfo[1]} ({excInfo[0]})")
+        (errorLine, errorDesc1, errorDesc0) = recoverErrorInfo( sys.exc_info() )
+        sendFailureEmail( creds, errorLine, errorDesc1, errorDesc0 ) 
+        print(f"ERROR in line {errorLine}:{errorDesc1} ({errorDesc0})")
         sys.exit(3)   
 
