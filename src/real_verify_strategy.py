@@ -24,11 +24,21 @@ class RealVerifyStrategy(object):
 
     def __init__(self, configAvailable : bool ):
         self._configAvailable = configAvailable
+        self._chunkSize = 8192
     
     def isVerificationAvailable(self):
         return self._configAvailable
     
     def verify(self, localResource, remoteMd5 ):
-        localMd5Sum = hashlib.md5(open(localResource, 'rb').read()).hexdigest()
-        return localMd5Sum == remoteMd5
+        return self._calculateMd5AsHex(localResource) == remoteMd5
+    
+    def _calculateMd5AsHex(self, filename ): 
+        with open(filename, 'rb') as fileContents:
+            file_hash = hashlib.md5()
+            chunk = fileContents.read( self._chunkSize )
+            while len(chunk) > 0 :
+                file_hash.update( chunk )
+                chunk = fileContents.read( self._chunkSize )
+            return file_hash.hexdigest()
+        
     

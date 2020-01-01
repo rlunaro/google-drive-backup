@@ -243,7 +243,8 @@ if __name__ == '__main__':
                           today_value, 
                           config )
           
-        print("Success")
+        log.info("Finished")
+        print( "Success" )
 
         
     except: 
