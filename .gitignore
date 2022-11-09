@@ -1,0 +1,44 @@
+# Specifies intentionally untracked files to ignore when using Git
+# http://git-scm.com/docs/gitignore
+
+
+# these files are standard for my projects: 
+# the folder PRIVATE is private of this project and 
+# never is shared publcly. The NOTES.* and 
+# SECRETS.* files are for internal documentation
+#
+NOTES.md
+NOTES.html
+SECRETS.md
+SECRETS.html
+PRIVATE/
+
+.project
+.pydevproject
+token.pickle
+config.json
+__pycache__
+
+*~
+*.sw[mnpcod]
+.tmp
+*.tmp
+*.tmp.*
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+UserInterfaceState.xcuserstate
+$RECYCLE.BIN/
+
+*.log
+log.txt
+npm-debug.log*
+
+/.angular
+/.idea
+/.ionic
+/.sass-cache
+/.sourcemaps
+/.versions
+/.vscode

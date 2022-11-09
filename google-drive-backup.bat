@@ -1,14 +1,26 @@
 rem 
-rem 
-rem 
-
-rem NOTE: if you are using a virtual environment (virtualenv) 
-rem to run the necessary packages for this application, 
-rem you can "activate" this virtual environment by just add
-rem it in the path, like this example: 
+rem google_drive_backup.cmd
 rem
-rem set "PATH=YOUR-PATH-TO-VIRTUAL-ENVIRONMENT\Scripts;%PATH%"
 
-python main.py
+set PYTHONIOENCODING=UTF-8
+
+if "%google_drive_backup_home%" == "" goto do_init
+
+goto skip_init
+
+:do_init
+set google_drive_backup_home=CONFIGURE HERE 
+set PYTHONPATH=%google_drive_backup_home%;%google_drive_backup_home%\src
+set PYTHON_HOME=%google_drive_backup_home%
+set PATH=%PYTHON_HOME%\Scripts\;%PATH%
+set PYTHON_EXE=%PYTHON_HOME%\Scripts\python.exe
+
+:skip_init
+
+"%PYTHON_EXE%" -u %google_drive_backup_home%\main.py ^
+--config="config.yaml" ^
+--logging="logging.json" ^
+%1 %2 %3 %4 %5
+
 
 
