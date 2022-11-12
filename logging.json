@@ -11,7 +11,7 @@
 	"handlers" : {
 		"handler1" : {
 			"class" : "logging.handlers.RotatingFileHandler",
-			"formatter" : "precise",
+			"encoding" : "utf-8",
 			"filename" : "google-drive-config.log", 
 			"maxBytes" : 1024000,
 			"backupCount" : 3,

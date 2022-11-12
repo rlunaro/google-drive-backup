@@ -21,11 +21,6 @@ limitations under the License.
 from reporting_strategy import ReportingStrategy
 
 class OnMemoryReportingStrategy( ReportingStrategy ):
-    '''
-    classdocs
-    '''
-
-
 
     def __init__(self):
         self._messages = []

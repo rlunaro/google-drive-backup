@@ -26,6 +26,7 @@ import json
 import datetime
 import logging
 import logging.config
+import subprocess 
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -38,8 +39,7 @@ from real_verify_strategy import RealVerifyStrategy
 from on_memory_reporting_strategy import OnMemoryReportingStrategy
 
 # If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata',
-          'https://www.googleapis.com/auth/drive.file',
+SCOPES = ['https://www.googleapis.com/auth/drive.file',
           'https://www.googleapis.com/auth/gmail.send']
 
 def loadOrValidateCredentials( token_file: str, 
@@ -184,10 +184,10 @@ def sendFailureEmail( creds,  errorLine, errorDesc1, errorDesc0 ):
 
 
 def setupLogger( logging_file : str ):
-        with open( logging_file, 'rt', encoding='utf-8') as log_file_json: 
-            loggingConfig = json.load( log_file_json )
-        logging.config.dictConfig( loggingConfig )
-        return logging.getLogger()
+    with open( logging_file, 'rt', encoding='utf-8') as log_file_json: 
+        loggingConfig = json.load( log_file_json )
+    logging.config.dictConfig( loggingConfig )
+    return logging.getLogger()
 
 if __name__ == '__main__':
     print("google-drive-backup")
@@ -205,7 +205,10 @@ if __name__ == '__main__':
         config = loadConfigContents( config_file )
             
         creds = loadOrValidateCredentials( token_file, config_file, SCOPES )
-    
+        
+        if "runBefore" in config and len(config) > 0 : 
+            subprocess.run( config["runBefore"] )
+        
         reporter = OnMemoryReportingStrategy()
         log.debug( "Loading Service Google Drive" )
         googleDrive = ServiceGoogleDrive( credentials = creds, 
