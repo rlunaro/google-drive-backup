@@ -22,20 +22,14 @@
 "yearlyPolicyFolder" : "03_yearly", 
 
 "//5" : "config info from credentials.json file", 
-"//6" : "this part is the authorization to use the API from google", 
-"//7" : "More information visti:", 
-"//9" : "https://github.com/rlunaro/google-drive-backup/blob/master/docs/request_permission_from_google.md",
-
 "installed":
-	{"client_id":"SOME-CLIENT-ID",
-	"project_id":"SOME-PROJECT-ID",
-	"auth_uri":"https://accounts.google.com/o/oauth2/auth",
-	"token_uri":"https://oauth2.googleapis.com/token",
-	"auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
-	"client_secret":"SOME-CLIENT-SECRET",
-	"redirect_uris":
-		["urn:ietf:wg:oauth:2.0:oob",
-		"http://localhost"]
-	}
+    {"client_id":"455135348146-s9h8nnd3rvg2qr2i2tgr0o7omdvjgca0.apps.googleusercontent.com",
+    "project_id":"helical-decoder-263110",
+    "auth_uri":"https://accounts.google.com/o/oauth2/auth",
+    "token_uri":"https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret":"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",
+    "redirect_uris":["http://localhost"]
+}
 }
 
