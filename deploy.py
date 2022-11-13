@@ -12,7 +12,7 @@ import zipfile
 import datetime
 
 lib_dir='/home/rluna/python/google-drive-backup-env/lib/python3.6/site-packages'
-deployment_filename = 'google-drive-backup.zip'
+deployment_filename = 'drive-backup.zip'
 
 def add_file_dir( zipfile:object, file_path:str, archive_name:str ) -> None :
     #print(f"Adding file {file_path}")
@@ -62,8 +62,8 @@ if __name__ == '__main__' :
         add_file_dir( deployment, 'example-config.json', 'example-config.json' )
         add_file_dir( deployment, 'logging.json', 'logging.json' )
         
-        add_file_dir( deployment, 'google-drive-backup.bat', 'google-drive-backup.bat' )
-        add_file_dir( deployment, 'google-drive-backup.sh', 'google-drive-backup.sh' )
+        add_file_dir( deployment, 'drive-backup.cmd', 'drive-backup.cmd' )
+        add_file_dir( deployment, 'drive-backup.sh', 'drive-backup.sh' )
         
     print(f'Deployed file {deployment_filename} on {datetime.datetime.now()}')   
 

@@ -8,9 +8,11 @@
 "emailFailure" : "email_failure_template.txt",
 
 "//2" : "config of directories / files to backup", 
+"runBefore" : ["EXAMPLE-OF-ADDICIONAL-COMMAND-TO-RUN.sh"],
+"runAfter" : [],
 
 "resourcesToBackup" : [
-						"THE LIST OF DIRECTORIES OR FILES TO BACKUP"
+						"THE LIST OF DIRECTORIES OR FILES TO BACKUP (DON'T end in /)"
 						],
 
 "verifyUploadedFiles" : "true",

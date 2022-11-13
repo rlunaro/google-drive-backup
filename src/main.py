@@ -59,7 +59,7 @@ def loadOrValidateCredentials( token_file: str,
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                credentials_file, scopes_list)
+                credentials_file, scopes_list )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open(token_file, 'wb') as token:
@@ -206,7 +206,7 @@ if __name__ == '__main__':
             
         creds = loadOrValidateCredentials( token_file, config_file, SCOPES )
         
-        if "runBefore" in config and len(config) > 0 : 
+        if "runBefore" in config and len(config['runBefore']) > 0 : 
             subprocess.run( config["runBefore"] )
         
         reporter = OnMemoryReportingStrategy()
@@ -245,7 +245,10 @@ if __name__ == '__main__':
                           creds, 
                           today_value, 
                           config )
-          
+
+        if "runAfter" in config and len(config['runAfter']) > 0 : 
+            subprocess.run( config["runAfter"] )
+
         log.info("Finished")
         print( "Success" )
 

@@ -1,0 +1,7 @@
+site_name: Drive backup
+nav:
+    - Home: index.md
+    - Install : install.md
+    - Privacy policy (english): privacy_en.md
+    - Privacy policy (spanish): privacy_es.md
+    

@@ -12,6 +12,9 @@ NOTES.html
 SECRETS.md
 SECRETS.html
 PRIVATE/
+site/
+data/
+
 
 .project
 .pydevproject
