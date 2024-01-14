@@ -32,6 +32,7 @@ this is achieved because the prompt will change:
 Now we are ready to install the google libraries for authentication
 and for managing the google api:
 
+    (drive-backup) drive-backup$ pip install pyaml
     (drive-backup) drive-backup$ pip install --upgrade google-api-python-client 
     (drive-backup) drive-backup$ pip install google-auth-oauthlib
 
