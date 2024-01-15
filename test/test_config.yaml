@@ -1,0 +1,112 @@
+#
+# config.yaml - configuration file for google-drive-backup
+#
+
+#
+# reporting: the implemented method for reporting is send an email, 
+# and here are the configuration data
+#
+reportEmail: 
+    emailFrom : "XXXXX@gmail.com" 
+    emailTo : ["XXXXXX@yahoo.com"] 
+    emailSuccess : 
+        subject : "OK: Copia de seguridad realizada con éxito el {day} a las {hour}"
+        body: > 
+
+            Hola caraguapa: 
+            
+            El {day}, a las {hour} se ha realizado con éxito la copia de seguridad. 
+            
+            {report}
+            
+            {backupPolicyExplanation}
+            
+            Saludos,
+            El robot más caraguapa del mundo
+    emailFailure : 
+        subject : "FAIL: Copia de seguridad HA FALLADO {day} a las {hour}"
+        body: >
+            Hola caraguapa: 
+            
+            Me temo que se ha producido un error en la copia de seguridad planificada para el día {day} a las {hour}. 
+            
+            El error que ha aparecido es: 
+            
+            {error_description}
+            
+            Posiblemente la copia no se haya realizado. Conviene echar un vistazo cuanto antes. 
+            
+            Saludos,
+            El robot más caraguapa del mundo        
+        
+
+#
+# resources to backup configuration section
+#
+
+# do you need to do do something before or after 
+# the copies are made??? -like run a script to collect
+# the backup copies, or stop a website or something like that- 
+# if so, you can configure it here 
+runBefore : ["/home/rluna/wkpy/google-drive-backup/data/database_backup.sh"]
+runAfter : []
+
+resourcesToBackup : 
+    - "../data"
+
+# Set this value to "true" if you want to 
+# verify the uploaded files 
+verifyUploadedFiles : true
+
+
+
+#
+# backup policies
+#
+# by default, three different policies can be configured: daily, monthly
+# and yearly. The "daily" copies are made each day, and are stored in the
+# indicated folder (in this example in the folder 01_diarios). Not all days
+# are saved, only the last X days. That X is set in the retention. For 
+# instance, if you set a retention of 3, only 3 copies will be stored.
+#
+backupPolicy:
+    destinationFolder : "backup" 
+    daily : 
+        folder: "01_diarios"
+        retention : 10 
+    monthly : 
+        folder: "02_mensuales"
+        retention : 13
+    yearly: 
+        folder: "03_anuales"
+        retention : 10
+
+#
+# logging configuration: can be omitted if you want
+#
+logging:
+    version: 1
+    formatters: 
+        formatter1: 
+            format: "%(asctime)s %(levelname)-8s %(message)s"
+            datefmt: "%Y-%m-%d %H:%M"
+    handlers: 
+        handler1:
+            class: "logging.handlers.RotatingFileHandler"
+            encoding : "utf-8"
+            filename : "drive-backup.log" 
+            # 1 Mb
+            maxBytes : 1024000
+            backupCount : 3
+            formatter: formatter1
+    loggers:
+        rotatingFileLogger:
+            level: DEBUG
+            handlers: [ "handler1" ]
+    root:
+        handlers : [ "handler1" ]
+        level : DEBUG
+
+
+
+

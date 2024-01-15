@@ -7,10 +7,7 @@
 # never is shared publcly. The NOTES.* and 
 # SECRETS.* files are for internal documentation
 #
-NOTES.md
-NOTES.html
-SECRETS.md
-SECRETS.html
+config.yaml
 PRIVATE/
 site/
 data/
@@ -19,7 +16,6 @@ data/
 .project
 .pydevproject
 token.pickle
-config.json
 __pycache__
 
 *~

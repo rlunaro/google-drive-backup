@@ -27,6 +27,7 @@ import datetime
 import logging
 import logging.config
 import subprocess 
+import yaml
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -42,8 +43,31 @@ from on_memory_reporting_strategy import OnMemoryReportingStrategy
 SCOPES = ['https://www.googleapis.com/auth/drive.file',
           'https://www.googleapis.com/auth/gmail.send']
 
+DEFAULT_LOG_CONFIG = {
+            "version": 1,
+            "formatters": 
+                { "formatter1": 
+                    {"format": "%(asctime)s %(levelname)-8s %(message)s",
+                     "datefmt": "%Y-%m-%d %H:%M"},
+            "handlers": 
+                {"handler1":
+                    { "class": "logging.handlers.RotatingFileHandler",
+                      "encoding" : "utf-8",
+                      "filename" : "drive-backup.log",  
+                      "maxBytes" : 1024000, # 1 Mb
+                      "backupCount" : 3,
+                      "formatter": "formatter1" }},
+            "loggers":
+                { "rotatingFileLogger":
+                    { "level": "DEBUG",
+                      "handlers": [ "handler1" ] }},
+            "root":
+                { "handlers" : [ "handler1" ],
+                  "level" : "DEBUG" } }
+    }
+
 def loadOrValidateCredentials( token_file: str, 
-                               credentials_file: str, 
+                               credentials: dict, 
                                scopes_list : list ):
     creds = None
     log.debug(f"loading credentials from token file {token_file}")
@@ -58,8 +82,8 @@ def loadOrValidateCredentials( token_file: str,
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                credentials_file, scopes_list )
+            flow = InstalledAppFlow.from_client_config(
+                                credentials, scopes_list )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open(token_file, 'wb') as token:
@@ -72,8 +96,7 @@ def deleteAndCreateFolder( googleDrive, dirName, parentFolderId = None ):
     return folderId 
 
 def doDailyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
-    dailyPolicyFolder = config["dailyPolicyFolder"]
-    dailyPolicyFolderId = googleDrive.getOrCreateFolder( dailyPolicyFolder, 
+    dailyPolicyFolderId = googleDrive.getOrCreateFolder( backupPolicy.getDailyPolicyFolder(), 
                                                          backupFolderId )
     currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive, 
                                                           backupPolicy.getDailyDir(), 
@@ -82,8 +105,7 @@ def doDailyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str 
 
         
 def doMonthlyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
-    monthlyPolicyFolder = config["monthlyPolicyFolder"]
-    monthlyPolicyFolderId = googleDrive.getOrCreateFolder( monthlyPolicyFolder, 
+    monthlyPolicyFolderId = googleDrive.getOrCreateFolder( backupPolicy.getMonthlyPolicyFolder(), 
                                                          backupFolderId )
     currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive,
                                                           backupPolicy.getMonthlyDir(), 
@@ -92,8 +114,7 @@ def doMonthlyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: st
 
 
 def doYearlyPolicy( config: dict, googleDrive, backupPolicy, backupFolderId: str ):
-    yearlyPolicyFolder = config["yearlyPolicyFolder"]
-    yearlyPolicyFolderId = googleDrive.getOrCreateFolder( yearlyPolicyFolder, 
+    yearlyPolicyFolderId = googleDrive.getOrCreateFolder( backupPolicy.getYearlyPolicyFolder(), 
                                                          backupFolderId )
     currentDestinationOfCopiesId = deleteAndCreateFolder( googleDrive,
                                                           backupPolicy.getYearlyDir(), 
@@ -106,14 +127,12 @@ def doBackup( config:dict, googleDrive, destinationOfCopiesId ):
                                     os.path.basename( resource ), 
                                     destinationOfCopiesId )
         
-        
 def parseArguments( argumentList : list ):
-    unixArgs = "t:c:l:d:"
-    gnuArgs = ["token=", "config=", "logging=", "today="]
+    unixArgs = "t:c:d:"
+    gnuArgs = ["token=", "config=", "today="]
     # default values
     token_file = 'token.pickle'
-    config_file = 'config.json'
-    logging_file = 'logging.json'
+    config_file = 'config.yaml'
     today_value = datetime.datetime.today()
     try : 
         args, values = getopt.getopt( argumentList, 
@@ -124,26 +143,22 @@ def parseArguments( argumentList : list ):
                 token_file = currentValue
             if currentArgument in ["--config", "c"] : 
                 config_file = currentValue
-            if currentArgument in ["--logging", "l"] :
-                logging_file = currentValue
             if currentArgument in ["--today", "d"] :
                 today_value = datetime.datetime.strptime(currentValue, '%Y-%m-%d')
     except getopt.error as err:
         print( str(err) )
         sys.exit(2)
-    return (token_file, config_file, logging_file, today_value)
+    return (token_file, config_file, today_value)
 
 def loadConfigContents( config_file : str ):
-    log.debug(f'loading config contents from file {config_file}')
     with open(config_file, "rt", encoding='utf-8') as config_file : 
-        config = json.load( config_file )       
-    return config
+        return yaml.safe_load( config_file )
 
-def sendSuccessEmail( googleDrive, backupPolicy, creds, today_value, config ):
+def sendSuccessEmail( creds, config, googleDrive, backupPolicy, today_value ):
     log.info("Sending success email....")
     service_gmail = ServiceGmail( credentials=creds )
     placeholders = { "day" : today_value.strftime("%d/%m"), 
-                     "hour" : datetime.datetime.now().strftime("%H:%M"),
+                     "hour" : today_value.strftime("%H:%M"),
                      "report" : googleDrive.getReporter().getMessagesAsString(),
                      "backupPolicyExplanation": backupPolicy.explain() }
     successTemplate = EmailTemplate( config["emailSuccess"],
@@ -165,28 +180,33 @@ def recoverErrorInfo( excInfo ):
         errorDesc0 = 'Not available'
     return (errorLineNumber, errorDesc1, errorDesc0)
 
-def sendFailureEmail( creds,  errorLine, errorDesc1, errorDesc0 ):
-    try:
-        service_gmail = ServiceGmail( credentials=creds )
-        placeholders = { "day" : today_value.strftime("%d/%m"), 
-                         "hour" : datetime.datetime.now().strftime("%H:%M"),
-                         "error_description" : f"{errorLine}:{errorDesc1} ({errorDesc0})" }
-        failureTemplate = EmailTemplate( config["emailFailure"],
-                                         placeholders )
-        service_gmail.sendSimpleEmail( emailFrom=config["emailFrom"],
-                                       emailTo=config["emailTo"],
-                                       emailSubject=failureTemplate.getSubject(),
-                                       emailBody=failureTemplate.getBody() )
-    except: 
-        print( f"     To: {config['emailTo']}" )
-        print( f"Subject: {failureTemplate.getSubject()}" )
-        print( f"{failureTemplate.getBody()}" )
+def sendFailureEmail( creds, 
+                      config: dict,
+                      errorLine, 
+                      errorDesc1, 
+                      errorDesc0 ):
+    # try:
+    service_gmail = ServiceGmail( credentials=creds )
+    placeholders = { "day" : today_value.strftime("%d/%m"), 
+                     "hour" : datetime.datetime.now().strftime("%H:%M"),
+                     "error_description" : f"{errorLine}:{errorDesc1} ({errorDesc0})" }
+    failureTemplate = EmailTemplate( config["emailFailure"],
+                                     placeholders )
+    service_gmail.sendSimpleEmail( emailFrom=config["emailFrom"],
+                                   emailTo=config["emailTo"],
+                                   emailSubject=failureTemplate.getSubject(),
+                                   emailBody=failureTemplate.getBody() )
+    # xjx 
+    # except: 
+    #     print( f"     To: {config['emailTo']}" )
+    #     print( f"Subject: {failureTemplate.getSubject()}" )
+    #     print( f"{failureTemplate.getBody()}" )
 
 
-def setupLogger( logging_file : str ):
-    with open( logging_file, 'rt', encoding='utf-8') as log_file_json: 
-        loggingConfig = json.load( log_file_json )
-    logging.config.dictConfig( loggingConfig )
+def setupLogger( logging_dict : dict ):
+    if not logging_dict:
+        logging_dict = DEFAULT_LOG_CONFIG
+    logging.config.dictConfig( logging_dict )
     return logging.getLogger()
 
 if __name__ == '__main__':
@@ -196,15 +216,14 @@ if __name__ == '__main__':
 
         (token_file, 
          config_file,
-         logging_file, 
          today_value ) = parseArguments( sys.argv[1:] )
     
-        log = setupLogger( logging_file )
-        log.debug( "google-drive-backup: start of execution" )
-    
         config = loadConfigContents( config_file )
+        
+        log = setupLogger( config["logging"] )
+        log.debug( "google-drive-backup: start of execution" )
             
-        creds = loadOrValidateCredentials( token_file, config_file, SCOPES )
+        creds = loadOrValidateCredentials( token_file, config, SCOPES )
         
         if "runBefore" in config and len(config['runBefore']) > 0 : 
             subprocess.run( config["runBefore"] )
@@ -215,47 +234,51 @@ if __name__ == '__main__':
                                           verificationStrategy= RealVerifyStrategy( config["verifyUploadedFiles"] == "true" ),
                                           reporter= reporter ) 
         log.debug( "done" )
-        backupFolderId = googleDrive.getOrCreateFolder("backup") 
+        backupFolderId = googleDrive.getOrCreateFolder(config["backupPolicy"]["destinationFolder"]) 
         
-        backupPolicy = BackupPolicy( today = today_value )
+        backupPolicy = BackupPolicy( config["backupPolicy"], today = today_value )
         
         if backupPolicy.isDailyPolicy() :
             reporter.info( "--->>> DAILY COPY START <<<------------------")
-            reporter.info( f"backup/{config['dailyPolicyFolder']}/{backupPolicy.getDailyDir()}")
+            reporter.info( f"backup/{backupPolicy.getDailyPolicyFolder()}/{backupPolicy.getDailyDir()}")
             doDailyPolicy( config, googleDrive, backupPolicy, backupFolderId )
             reporter.info( "--->>> DAILY COPY ENDS <<<------------------")
             log.info( "Performed daily copy" )
             
         if backupPolicy.isMonthlyPolicy() : 
             reporter.info( "--->>> MONTHLY COPY START <<<------------------")
-            reporter.info( f"backup/{config['monthlyPolicyFolder']}/{backupPolicy.getMonthlyDir()}")
+            reporter.info( f"backup/{backupPolicy.getMonthlyPolicyFolder()}/{backupPolicy.getMonthlyDir()}")
             doMonthlyPolicy( config, googleDrive, backupPolicy, backupFolderId )
             reporter.info( "--->>> MONTHLY COPY ENDS <<<------------------")
             log.info( "Performed monthly copy" )
             
         if backupPolicy.isYearlyPolicy() : 
             reporter.info( "--->>> YEARLY COPY START <<<------------------")
-            reporter.info( f"backup/{config['yearlyPolicyFolder']}/{backupPolicy.getYearlyDir()}")
+            reporter.info( f"backup/{backupPolicy.getYearlyPolicyFolder()}/{backupPolicy.getYearlyDir()}")
             doYearlyPolicy( config, googleDrive, backupPolicy, backupFolderId )
             reporter.info( "--->>> YEARLY COPY ENDS <<<------------------")
             log.info( "Performed yearly copy" )
         
-        sendSuccessEmail( googleDrive, 
+        sendSuccessEmail( creds,
+                          config["reportEmail"], 
+                          googleDrive, 
                           backupPolicy, 
-                          creds, 
-                          today_value, 
-                          config )
-
+                          today_value )
+    
         if "runAfter" in config and len(config['runAfter']) > 0 : 
             subprocess.run( config["runAfter"] )
-
+    
         log.info("Finished")
         print( "Success" )
 
         
     except: 
         (errorLine, errorDesc1, errorDesc0) = recoverErrorInfo( sys.exc_info() )
-        sendFailureEmail( creds, errorLine, errorDesc1, errorDesc0 ) 
+        sendFailureEmail( creds, 
+                          config["reportEmail"], 
+                          errorLine, 
+                          errorDesc1, 
+                          errorDesc0 ) 
         print(f"ERROR in line {errorLine}:{errorDesc1} ({errorDesc0})")
         sys.exit(3)   
 

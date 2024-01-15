@@ -19,58 +19,108 @@ limitations under the License.
 '''
 
 import datetime
-from http.cookiejar import EPOCH_YEAR
 
 class BackupPolicy(object):
     '''
     determine the backup policy to apply
     '''
+    DAILY_TEXT = """La carpeta {folder}, contiene las copias diarias que se 
+    hacen. Sólo se hacen {retention}: una de las carpetas contiene la 
+    más reciente y el resto contienen las de días anteriores: el sistema
+    va rotando para mantener sólo ése número de copias."""
+    MONTLY_TEXT = """La segunda carpeta, {folder}, contiene las copias que se hacen 
+    los días 1 de cada mes. Sólo se hacen {retention}: una de las carpetas contiene la 
+    más reciente y el resto contienen las de meses anteriores: el sistema
+    va rotando para mantener sólo ése número de copias."""
+    YEARLY_TEXT = """La tercera carpeta, {folder}, contiene las copias que se hacen los
+    días 30/12 (el penúltimo día del año). Se retienen sólamente {retention} copias, por
+    el mismo algoritmo que en los casos anteriores: el programa va buscando qué carpeta
+    toca y deja ahí la copia del año, de forma que sólo tendrás {retention} copias anuales."""
 
+    DEFAULT_RETENTIONS = { "daily" : 10, 
+                           "monthly" : 13, 
+                           "yearly" : 10 }
 
-    def __init__(self, today = datetime.datetime.today() ):
+    def __init__(self, 
+                 backupPolicy: dict, 
+                 today = datetime.datetime.today() ):
+        self._backupPolicy = backupPolicy
         self._today = today
         
     def explain(self):
-        return '''
+        policy_explanation = '''
 Una breve nota sobre la política de respaldo: 
 
-En la carpeta "backup" encontrarás tres directorios: 01_diarios, 
-02_mensuales, 03_anuales. 
+En la carpeta "{destinationFolder}" encontrarás {numberOfFolders} 
+directorios: {foldersAsList}. 
 
-La primera carpeta, 01_diarios, contiene las copias diarias que se 
-hacen. Solo se hacen 10, coincidiendo con el último dígito del día. 
-Por ejemplo, si hoy es día 25, las copias que se hayan hecho en la 
-noche del 24 al 25 (que es día 25), irán a la carpeta "5". 
+{dailyExplanationIfNeeded}
 
-La segunda carpeta, 02_menusales, contiene las copias que se hacen 
-los días 1 de cada mes. Van por meses; es decir en la 05 encontrarás
-la copia que se hizo el 01/05, es decir, la de primeros de Mayo.
+{monthlyExplanationIfNeeded}
 
-La tercera carpeta, 03_anuales, contiene las copias que se hacen los
-días 30/12 (el penúltimo día del año). Van por el último dígito del 
-año. Es decir, para el año 2019 la copia irá al 03_anuales/9. Para el 
-año 2020, la copia irá al 03_anuales/0. 
+{yearlyExplanationIfNeeded}
 '''
+        return policy_explanation.format(
+                destinationFolder = self._backupPolicy["destinationFolder"],
+                numberOfFolders = self._numberOfFolders(), 
+                foldersAsList = self._foldersAsList(), 
+                dailyExplanationIfNeeded = self._explanationOrNothing( "daily", self.DAILY_TEXT ), 
+                monthlyExplanationIfNeeded = self._explanationOrNothing( "monthly", self.MONTLY_TEXT ),
+                yearlyExplanationIfNeeded = self._explanationOrNothing( "yearly", self.YEARLY_TEXT ) )
+    
+    def _numberOfFolders(self):
+        folders = 0
+        for key in ["daily", "monthly", "yearly"]: 
+            if key in self._backupPolicy.keys() and self._backupPolicy[key]:
+                folders += 1
+        return folders
+    
+    def _foldersAsList(self):
+        folders = ""
+        for key in ["daily", "monthly", "yearly"]: 
+            if key in self._backupPolicy.keys() and self._backupPolicy[key]:
+                if folders != "": 
+                    folders += ", "
+                folders += self._backupPolicy[key]["folder"]
+        return folders
+
+    def _explanationOrNothing(self, key : str, text : str):
+        if key in self._backupPolicy.keys():
+            folder = self._backupPolicy[key].get("folder", "")
+            retention = self._backupPolicy[key].get("retention", self.DEFAULT_RETENTIONS[key])
+            explanation = text.format(
+                folder = folder,
+                retention = retention )
+            return explanation
+        return ""
 
     def isDailyPolicy(self):
         '''
         the daily policy is enforceable everytime the 
-        program is invoked
+        program is invoked given that is configured
         '''
-        return True
+        return self._backupPolicy.get("daily", False)
     
     def isMonthlyPolicy(self):
         '''
         the montly policy is enforceable the day 1 of each month
+        given that is configured 
         '''
-        return self._today.day == 1 
+        return (self._backupPolicy.get("monthly", False) 
+                and self._today.day == 1) 
     
     def isYearlyPolicy(self):
         '''
         the yearly policy is enforceable the day 12/30 of each year
         (we will avoid to use the 12/31 date)
+        given that is configured
         '''
-        return (self._today.month == 12 and self._today.day == 30)
+        return (self._backupPolicy.get("yearly", False) 
+                and self._today.month == 12 
+                and self._today.day == 30)
+    
+    def getDailyPolicyFolder(self):
+        return self._backupPolicy["daily"]["folder"]
     
     def getDailyDir(self):
         '''
@@ -78,16 +128,34 @@ año 2020, la copia irá al 03_anuales/0.
         11 -> '1' 
         1 -> '1'
         '''
-        return '{:01d}'.format( self._today.day % 10 )
+        try:
+            daily_retention = self._backupPolicy["daily"]["retention"]
+        except:
+            daily_retention = self.DEFAULT_RETENTIONS["daily"]
+        return '{:01d}'.format( self._today.day % daily_retention )
+    
+    def getMonthlyPolicyFolder(self):
+        return self._backupPolicy["monthly"]["folder"]
     
     def getMonthlyDir(self):
-        return '{:02d}'.format(  self._today.month )
+        try:
+            monthly_retention = self._backupPolicy["monthly"]["retention"]
+        except: 
+            monthly_retention = self.DEFAULT_RETENTIONS["monthly"]
+        return '{:02d}'.format( self._today.month % monthly_retention )
     
+    def getYearlyPolicyFolder(self):
+        return self._backupPolicy["yearly"]["folder"]
+
     def getYearlyDir(self):
         '''
         2019 -> '9'
         2020 -> '0'
         '''
-        return '{:01d}'.format( self._today.year % 10)
+        try: 
+            yearly_retention = self._backupPolicy["yearly"]["retention"]
+        except: 
+            yearly_retention = self.DEFAULT_RETENTIONS["yearly"]
+        return '{:01d}'.format( self._today.year % yearly_retention)
 
     

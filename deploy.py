@@ -57,10 +57,7 @@ if __name__ == '__main__' :
         add_file_dir( deployment, 'src/service_google_drive.py', 'service_google_drive.py' )
         add_file_dir( deployment, 'src/verify_stragegy.py', 'verify_stragegy.py' )
 
-        add_file_dir( deployment, 'email_failure_template.txt', 'email_failure_template.txt' )
-        add_file_dir( deployment, 'email_success_template.txt', 'email_success_template.txt' )
-        add_file_dir( deployment, 'example-config.json', 'example-config.json' )
-        add_file_dir( deployment, 'logging.json', 'logging.json' )
+        add_file_dir( deployment, 'example-config.yaml', 'example-config.yaml' )
         
         add_file_dir( deployment, 'drive-backup.cmd', 'drive-backup.cmd' )
         add_file_dir( deployment, 'drive-backup.sh', 'drive-backup.sh' )

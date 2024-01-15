@@ -18,18 +18,32 @@ limitations under the License.
 @author: rluna
 '''
 import datetime
-import os.path
 import unittest
 
+from main import loadConfigContents
 from email_template import EmailTemplate
 
 class TestEmailTemplate(unittest.TestCase):
 
 
     def testOne(self):
-        template = EmailTemplate( os.path.join("..","email_failure_template.txt"), 
-                                   {"day" : "2019-12-25" } )
+        self.config = loadConfigContents( "test_config.yaml" )
+        today = datetime.datetime.fromisoformat("2024-01-01 08:30:00")
+        placeholders = { "day" : today.strftime("%d/%m"), 
+                     "hour" : today.strftime("%H:%M"),
+                     "report" : "this is the result of the backup",
+                     "backupPolicyExplanation": "this is the explanation of the backup policy" }
+        template = EmailTemplate( self.config["reportEmail"]["emailSuccess"], 
+                                   placeholders )
         print( template.getBody() )
+        self.assertTrue( template.getBody() == 
+"""
+Hola caraguapa: 
+El 01/01, a las 08:30 se ha realizado con éxito la copia de seguridad. 
+this is the result of the backup
+this is the explanation of the backup policy
+Saludos, El robot más caraguapa del mundo
+""" )
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

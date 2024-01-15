@@ -20,18 +20,21 @@ limitations under the License.
 import unittest
 import datetime
 
+from main import loadConfigContents
 from backup_policy import BackupPolicy
 
 class TestBackupPolciy(unittest.TestCase):
 
     def setUp(self):
-        self._backupPolicy = BackupPolicy()
+        self.config = loadConfigContents( "test_config.yaml" )
+        self._backupPolicy = BackupPolicy( self.config["backupPolicy"] )
 
     def tearDown(self):
         pass
 
     def testBackupPolicy1(self):
-        backup = BackupPolicy( datetime.datetime(2019, 2, 5) )
+        backup = BackupPolicy( self.config["backupPolicy"], 
+                               datetime.datetime(2019, 2, 5) )
         self.assertTrue( backup.isDailyPolicy() )
         self.assertFalse( backup.isMonthlyPolicy() )
         self.assertFalse( backup.isYearlyPolicy() )
@@ -39,7 +42,8 @@ class TestBackupPolciy(unittest.TestCase):
         self.assertTrue( backup.getMonthlyDir() == '02' )
         self.assertTrue( backup.getYearlyDir() == '9' )
         
-        backup = BackupPolicy( datetime.datetime(2020, 2, 1) )
+        backup = BackupPolicy( self.config["backupPolicy"], 
+                               datetime.datetime(2020, 2, 1) )
         self.assertTrue( backup.isDailyPolicy() )
         self.assertTrue( backup.isMonthlyPolicy() )
         self.assertFalse( backup.isYearlyPolicy() )
@@ -47,7 +51,8 @@ class TestBackupPolciy(unittest.TestCase):
         self.assertTrue( backup.getMonthlyDir() == '02' )
         self.assertTrue( backup.getYearlyDir() == '0' )
 
-        backup = BackupPolicy( datetime.datetime(2020, 12, 30) )
+        backup = BackupPolicy( self.config["backupPolicy"], 
+                               datetime.datetime(2020, 12, 30) )
         self.assertTrue( backup.isDailyPolicy() )
         self.assertFalse( backup.isMonthlyPolicy() )
         self.assertTrue( backup.isYearlyPolicy() )
@@ -57,5 +62,5 @@ class TestBackupPolciy(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    #import sys;sys.argv = ['', 'Test.testBackupPolicy1']
     unittest.main()
