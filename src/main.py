@@ -84,7 +84,7 @@ def loadOrValidateCredentials( token_file: str,
         else:
             flow = InstalledAppFlow.from_client_config(
                                 credentials, scopes_list )
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=0, open_browser=False)
         # Save the credentials for the next run
         with open(token_file, 'wb') as token:
             pickle.dump(creds, token)
@@ -274,11 +274,6 @@ if __name__ == '__main__':
         
     except: 
         (errorLine, errorDesc1, errorDesc0) = recoverErrorInfo( sys.exc_info() )
-        sendFailureEmail( creds, 
-                          config["reportEmail"], 
-                          errorLine, 
-                          errorDesc1, 
-                          errorDesc0 ) 
         print(f"ERROR in line {errorLine}:{errorDesc1} ({errorDesc0})")
         sys.exit(3)   
 
