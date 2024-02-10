@@ -74,7 +74,7 @@ class ServiceGoogleDrive(object):
                          'mimeType': 'application/vnd.google-apps.folder',
                          'parents' : [ parentFolderId ] }
         else :
-            file_metadata = { 'name' : 'backup', 
+            file_metadata = { 'name' : folderName, 
                          'mimeType': 'application/vnd.google-apps.folder' }
         file = self._drive_service.files().create(body=file_metadata,
                                         fields='id').execute()

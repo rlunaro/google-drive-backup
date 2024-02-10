@@ -234,7 +234,7 @@ if __name__ == '__main__':
                                           verificationStrategy= RealVerifyStrategy( config["verifyUploadedFiles"] == "true" ),
                                           reporter= reporter ) 
         log.debug( "done" )
-        backupFolderId = googleDrive.getOrCreateFolder(config["backupPolicy"]["destinationFolder"]) 
+        backupFolderId = googleDrive.getOrCreateFolder(config["backupPolicy"]["destinationFolder"], 'root' ) 
         
         backupPolicy = BackupPolicy( config["backupPolicy"], today = today_value )
         
